@@ -112,6 +112,7 @@
         <module>notification-package</module>
         <module>payara-api-package</module>
 	    <module>payara-executor-service-package</module>
+        <module>monitoring-package</module>
     </modules>
 
     <build>
