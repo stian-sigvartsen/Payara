@@ -68,6 +68,10 @@ public class PersistenceExtension implements Extension  {
 
     @SuppressWarnings("unchecked")
     private void addBeanForEntityManager(AfterBeanDiscovery afterBeanDiscovery, PersistenceUnitDescriptor descriptor) {
+        if (descriptor.getQualifiers() == null || descriptor.getQualifiers().isEmpty()) {
+            return;
+        }
+
         var bean = addQualifiedBean(afterBeanDiscovery, descriptor, EntityManager.class);
 
         if (descriptor.getScope() != null) {
@@ -79,6 +83,10 @@ public class PersistenceExtension implements Extension  {
 
     @SuppressWarnings("unchecked")
     private void addBeanForEntityManagerFactory(AfterBeanDiscovery afterBeanDiscovery, PersistenceUnitDescriptor descriptor) {
+        if (descriptor.getQualifiers() == null || descriptor.getQualifiers().isEmpty()) {
+            return;
+        }
+
         var bean = addQualifiedBean(afterBeanDiscovery, descriptor, EntityManagerFactory.class);
 
         if (descriptor.getScope() != null) {
@@ -125,6 +133,7 @@ public class PersistenceExtension implements Extension  {
 
     private BeanConfigurator<Object> addQualifiedBean(AfterBeanDiscovery afterBeanDiscovery, PersistenceUnitDescriptor descriptor, Type type) {
         var bean = afterBeanDiscovery.addBean().addType(type);
+
 
         for (String qualifierClassName : descriptor.getQualifiers()) {
             bean.addQualifier(createAnnotationInstance(loadClass(qualifierClassName)));
