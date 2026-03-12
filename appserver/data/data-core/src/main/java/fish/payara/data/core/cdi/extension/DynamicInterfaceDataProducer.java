@@ -184,6 +184,10 @@ public class DynamicInterfaceDataProducer<T> implements Producer<T>, ProducerFac
         logger.info("Processing query for entity class: " + repository);
         //get entity type
         Class<?> declaredEntityClass = getEntityType(this.repository);
+        // If entity type is not declared via generics, infer it from lifecycle method parameters
+        if (declaredEntityClass == null) {
+            declaredEntityClass = inferEntityTypeFromLifecycleMethods(this.repository);
+        }
         logger.info("Processing entity class " + (declaredEntityClass != null ? declaredEntityClass.getName() : "null"));
         try (EntityManager entityManager = getEntityManagerSupplier(this.jakartaDataExtension.getApplicationName(), this.dataStore).get()) {
             for (Method method : this.repository.getMethods()) {
@@ -197,6 +201,31 @@ public class DynamicInterfaceDataProducer<T> implements Producer<T>, ProducerFac
                 addQueries(entityManager, repository, declaredEntityClass, entityParamType, method);
             }
         }
+    }
+
+    /**
+     * Infers the primary entity type by inspecting lifecycle method ({@code @Insert}, {@code @Save},
+     * {@code @Update}, {@code @Delete}) parameters. This handles repositories that do not declare
+     * their entity type via generic type parameters but whose entity type can be determined from
+     * the parameter types of their lifecycle methods, as required by the Jakarta Data specification.
+     *
+     * @param repositoryInterface the repository interface to inspect
+     * @return the inferred entity class, or null if not determinable
+     */
+    private Class<?> inferEntityTypeFromLifecycleMethods(Class<?> repositoryInterface) {
+        for (Method method : repositoryInterface.getMethods()) {
+            if (method.isDefault()) {
+                continue;
+            }
+            if (method.isAnnotationPresent(Insert.class) || method.isAnnotationPresent(Save.class)
+                    || method.isAnnotationPresent(Update.class) || method.isAnnotationPresent(Delete.class)) {
+                Class<?> entityType = findEntityTypeInMethod(method);
+                if (entityType != null) {
+                    return entityType;
+                }
+            }
+        }
+        return null;
     }
 
     /**
